@@ -1,0 +1,9 @@
+// 2 ka table
+
+ye number = 12
+ye i = 1
+
+jabtak (i <= 10) {
+    bol number * i
+    i = i + 1
+}
