@@ -1,0 +1,145 @@
+#!/usr/bin/env node
+// bin/ylang
+import fs from "fs";
+import path from "path";
+import readline from "readline";
+import { compiler } from "../src/compiler.js";
+
+const pkg = JSON.parse(
+  fs.readFileSync(new URL("../package.json", import.meta.url), "utf8")
+);
+
+function printHelp() {
+  console.log(`ylang ${pkg.version}
+Usage:
+  ylang <file.ylang> [args...]    Run a file with optional arguments
+  ylang -e "<code>"               Evaluate code passed as string
+  ylang --repl                    Start interactive REPL
+  ylang --help                    Show help
+  ylang --version                 Show version
+
+Examples:
+  ylang examples/demo.ylang foo bar
+  cat examples/demo.ylang | ylang
+  ylang -e "ye x = 5; bol x"
+`);
+}
+
+function printVersion() {
+  console.log(pkg.version);
+}
+
+async function runFile(filepath, argv = []) {
+  try {
+    const resolved = path.resolve(process.cwd(), filepath);
+    const code = fs.readFileSync(resolved, "utf8");
+    compiler(code, { argv });
+  } catch (err) {
+    handleError(err, filepath);
+    process.exit(1);
+  }
+}
+
+function handleError(err, context = "") {
+  // Nice formatting: show file/line if lexer/parser throws message with line info later
+  console.error(`\x1b[31mError:\x1b[0m ${err.message}`);
+  if (err.stack && process.env.YLANG_DEBUG) {
+    console.error(err.stack);
+  }
+}
+
+function startREPL() {
+  console.log("YLANG REPL — type .exit to quit");
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: "ylang> "
+  });
+
+  rl.prompt();
+
+  rl.on("line", (line) => {
+    if (line.trim() === ".exit") {
+      rl.close();
+      return;
+    }
+    try {
+      // evaluate the entered line as a mini program
+      compiler(line, { argv: [] });
+    } catch (err) {
+      handleError(err);
+    }
+    rl.prompt();
+  });
+
+  rl.on("close", () => {
+    process.exit(0);
+  });
+}
+
+async function readStdin() {
+  const chunks = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(chunk);
+  }
+  return chunks.join("");
+}
+
+// MAIN
+(async function main() {
+  const argv = process.argv.slice(2);
+
+  if (argv.length === 0) {
+    // If input is piped (non-TTY), read stdin; otherwise show help
+    if (!process.stdin.isTTY) {
+      const piped = await readStdin();
+      try {
+        compiler(piped, { argv: [] });
+      } catch (err) {
+        handleError(err, "<stdin>");
+        process.exit(1);
+      }
+    } else {
+      printHelp();
+      process.exit(0);
+    }
+    return;
+  }
+
+  const first = argv[0];
+
+  if (first === "--help" || first === "-h") {
+    printHelp();
+    process.exit(0);
+  }
+
+  if (first === "--version" || first === "-v") {
+    printVersion();
+    process.exit(0);
+  }
+
+  if (first === "--repl") {
+    startREPL();
+    return;
+  }
+
+  if (first === "-e") {
+    const code = argv.slice(1).join(" ");
+    if (!code) {
+      console.error("No code provided for -e");
+      process.exit(1);
+    }
+    try {
+      compiler(code, { argv: [] });
+    } catch (err) {
+      handleError(err);
+      process.exit(1);
+    }
+    return;
+  }
+
+  // Otherwise treat first arg as filename
+  const file = first;
+  const programArgs = argv.slice(1);
+  await runFile(file, programArgs);
+})();

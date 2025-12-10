@@ -1,0 +1,6 @@
+bol "Arguments:"
+bol ARGV
+bol "First:"
+bol ARGV[0]
+bol "Second:"
+bol ARGV[1]

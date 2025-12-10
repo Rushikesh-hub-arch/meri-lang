@@ -1,0 +1,12 @@
+{
+  "name": "ylang",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "ylang": "./bin/ylang"
+  },
+  "scripts": {
+    "start": "node ./bin/ylang"
+  },
+  "license": "MIT"
+}

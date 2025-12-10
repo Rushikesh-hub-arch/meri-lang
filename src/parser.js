@@ -27,12 +27,36 @@ function parsePrimary(tokens) {
         };
     }
 
-    if (token.type === "identifier") {
-        return {
-            type: "Identifier",
-            name: next(tokens).value
+// IDENTIFIER (+ optional indexing: ARGV[0], arr[i], etc.)
+if (token.type === "identifier") {
+    const idToken = next(tokens); // consume identifier
+
+    // Base node
+    let node = {
+        type: "Identifier",
+        name: idToken.value
+    };
+
+    // Support chained indexing: a[0], a[1][2], etc.
+    while (peek(tokens) && peek(tokens).type === "LBRACKET") {
+        next(tokens); // consume '['
+        const indexExpr = parseExpression(tokens);
+        
+        if (!peek(tokens) || peek(tokens).type !== "RBRACKET") {
+            throw new Error("Missing closing ']' in index expression");
+        }
+        next(tokens); // consume ']'
+
+        node = {
+            type: "IndexExpression",
+            object: node,
+            index: indexExpr
         };
     }
+
+    return node;
+}
+
 
   if (token.type === "string") {
     return {

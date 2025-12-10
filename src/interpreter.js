@@ -51,6 +51,16 @@ function evaluateExpression(node, scope) {
             }
             return scope[node.name];
 
+        case "IndexExpression":
+           const obj = evaluateExpression(node.object, scope);
+           const index = evaluateExpression(node.index, scope);
+
+           if (!Array.isArray(obj)) {
+             throw new Error("Cannot index non-array value: " + JSON.stringify(obj));
+           }
+
+           return obj[index];
+
         case "BinaryExpression":
             const left = evaluateExpression(node.left, scope);
             const right = evaluateExpression(node.right, scope);

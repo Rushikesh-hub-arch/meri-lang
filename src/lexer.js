@@ -94,8 +94,20 @@ if (char === '(' || char === ')') {
     cursor++;
     continue;
 }
+// ------------------------------------
+// ARRAY INDEX BRACKETS
+// ------------------------------------
+if (char === '[') {
+    tokens.push({ type: 'LBRACKET', value: '[' });
+    cursor++;
+    continue;
+}
 
-
+if (char === ']') {
+    tokens.push({ type: 'RBRACKET', value: ']' });
+    cursor++;
+    continue;
+}
         // ------------------------------------
         // COMPARISON + ARITHMETIC OPERATORS
         // ------------------------------------
